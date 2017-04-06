@@ -1,3 +1,5 @@
+[uri]$defaultRootUri = "https://www.arcgis.com/sharing/rest"
+
 class Token {
     [string] $token
     [System.DateTimeOffset] $expires
@@ -8,7 +10,7 @@ class Token {
 }
 
 class Portal {
-    [uri] $rootUri = "https://www.arcgis.com/sharing/rest";
+    [uri] $rootUri = $defaultRootUri;
     [string] $username;
     [string] $password;
     [uri] $referrer;
@@ -30,7 +32,7 @@ class Portal {
             }
             $tokenUri = "$($this.rootUri)/generateToken"
             $response = Invoke-RestMethod -Uri $tokenUri -Method Post -Body $params
-            $this._token  = New-Object Token $response
+            $this._token = New-Object Token $response
         }
         return $this._token
     }
@@ -41,6 +43,17 @@ class Portal {
             f = "json"
         }
         $response = Invoke-RestMethod -Uri "$($this.rootUri)/search" -Method Get -Body $params
+        if ($response.error) {
+            Write-Error $response.error
+        }
+        # $response = Invoke-WebRequest -Uri "$($this.rootUri)/search" -Method Get -Body $params
         return $response
     }
 }
+
+function Get-Portal {
+    param([string]$Username, [string]$Password, [uri]$RootUri = $defaultRootUri, [uri]$Referrer = $defaultRootUri)
+    return New-Object Portal($RootUri, $Referrer, $Username, $Password)
+}
+
+Export-ModuleMember -Function Get-Portal

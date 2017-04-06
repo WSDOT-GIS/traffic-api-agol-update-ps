@@ -1,4 +1,4 @@
-using module .\ArcGis.psm1
+Import-Module .\ArcGis.psm1
 
 $configFile = ".\config.json"
 
@@ -8,7 +8,18 @@ if ((Test-Path $configFile) -eq $false) {
 }
 $config = Get-Content $configFile | ConvertFrom-Json
 
-$portal = New-Object Portal @("https://www.arcgis.com/sharing/rest", 'https://wsdot.maps.arcgis.com', $config.username, $config.password)
+$portal = Get-Portal $config.username $config.password "https://www.arcgis.com/sharing/rest" 'https://wsdot.maps.arcgis.com'
 $searchResults = $portal.Search('TravelerInfo type: "Feature Service"')
 
-return $searchResults
+if ($searchResults.results.Length -eq 1) {
+    Write-Debug "Found one search result"
+    $hostedService = $searchResults.results[0]
+} elseif ($searchResults.results.Length -gt 1) {
+    Write-Error "More than one matching result was returned. Only expected a single result."
+} else {
+    Write-Debug "No results were returned from the search. TODO: create new feature service from FGDB."
+}
+
+Remove-Module ArcGis
+
+return $hostedService
